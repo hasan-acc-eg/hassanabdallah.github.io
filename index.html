@@ -1,0 +1,161 @@
+
+<h2 class="sr-only">أداة Job Hunter - مولّد روابط LinkedIn</h2>
+<div style="padding: 1.5rem 0;">
+
+<div style="display: grid; gap: 12px; margin-bottom: 1.5rem;">
+  <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem;">
+    <label style="font-size: 13px; color: var(--color-text-secondary); display: block; margin-bottom: 6px;"><i class="ti ti-map-pin" aria-hidden="true" style="font-size:15px; vertical-align:-2px; margin-right:4px"></i>الدول (افصل بفاصلة)</label>
+    <input type="text" id="countries" placeholder="Egypt, Germany, Netherlands, Canada" style="width: 100%; box-sizing: border-box;" value="Egypt, Germany, Netherlands, Canada" />
+  </div>
+
+  <div id="categories-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
+
+  <button onclick="addCategory()" style="align-self: flex-start; padding: 8px 16px; font-size: 13px; border-radius: var(--border-radius-md);">
+    <i class="ti ti-plus" aria-hidden="true"></i> إضافة Category
+  </button>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.5rem;">
+  <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem;">
+    <label style="font-size: 13px; color: var(--color-text-secondary); display: block; margin-bottom: 6px;"><i class="ti ti-filter" aria-hidden="true" style="font-size:15px; vertical-align:-2px; margin-right:4px"></i>نوع العمل</label>
+    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;" id="worktype-options">
+      <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="remote" checked> Remote</label>
+      <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="hybrid"> Hybrid</label>
+      <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="on-site"> On-site</label>
+    </div>
+  </div>
+  <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem;">
+    <label style="font-size: 13px; color: var(--color-text-secondary); display: block; margin-bottom: 6px;"><i class="ti ti-bolt" aria-hidden="true" style="font-size:15px; vertical-align:-2px; margin-right:4px"></i>فلاتر إضافية</label>
+    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;">
+      <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" id="easy-apply"> Easy Apply</label>
+      <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" id="visa"> Visa Sponsorship</label>
+    </div>
+  </div>
+</div>
+
+<button onclick="generateLinks()" style="width: 100%; padding: 10px; font-size: 15px; font-weight: 500; border-radius: var(--border-radius-md); background: var(--color-background-info); color: var(--color-text-info); border: 1px solid var(--color-border-info);">
+  <i class="ti ti-search" aria-hidden="true"></i> توليد الروابط
+</button>
+
+<div id="results" style="margin-top: 1.5rem; display: none;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <span style="font-size: 14px; font-weight: 500;" id="results-count"></span>
+    <button onclick="openAll()" style="font-size: 13px; padding: 6px 14px; border-radius: var(--border-radius-md);">
+      <i class="ti ti-external-link" aria-hidden="true"></i> Open All
+    </button>
+  </div>
+  <div id="links-list" style="display: flex; flex-direction: column; gap: 6px;"></div>
+</div>
+
+</div>
+
+<script>
+const categoriesData = [
+  { label: 'Backend Developer', keywords: ['Backend Developer', 'Python Developer', 'Node.js Developer'] },
+  { label: 'Fullstack Developer', keywords: ['Fullstack Developer', 'Full Stack Engineer'] }
+];
+
+function renderCategories() {
+  const container = document.getElementById('categories-container');
+  container.innerHTML = '';
+  categoriesData.forEach((cat, i) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem;';
+    div.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <label style="font-size:13px; color:var(--color-text-secondary);"><i class="ti ti-tag" aria-hidden="true" style="font-size:15px;vertical-align:-2px;margin-right:4px"></i>Category ${i+1}</label>
+        ${categoriesData.length > 1 ? `<button onclick="removeCategory(${i})" style="font-size:12px; padding:3px 8px; border-radius:var(--border-radius-md); color:var(--color-text-danger); border-color:var(--color-border-danger);"><i class="ti ti-trash" aria-hidden="true"></i></button>` : ''}
+      </div>
+      <input type="text" placeholder="اسم الـ Category (مثال: Backend)" style="width:100%; box-sizing:border-box; margin-bottom:8px;" value="${cat.label}" oninput="categoriesData[${i}].label = this.value" />
+      <label style="font-size:12px; color:var(--color-text-secondary); display:block; margin-bottom:4px;">Keywords (كل keyword في سطر)</label>
+      <textarea rows="3" style="width:100%; box-sizing:border-box; resize:vertical; font-size:13px; padding:8px; border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-md); background:var(--color-background-primary); color:var(--color-text-primary);" placeholder="Backend Developer&#10;Python Developer&#10;Node.js Developer" oninput="updateKeywords(${i}, this.value)">${cat.keywords.join('\n')}</textarea>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function updateKeywords(i, val) {
+  categoriesData[i].keywords = val.split('\n').map(k => k.trim()).filter(Boolean);
+}
+
+function addCategory() {
+  categoriesData.push({ label: `Category ${categoriesData.length + 1}`, keywords: [] });
+  renderCategories();
+}
+
+function removeCategory(i) {
+  categoriesData.splice(i, 1);
+  renderCategories();
+}
+
+function buildLinkedInURL(keyword, countries, workTypes, easyApply, visaSponsorship) {
+  const base = 'https://www.linkedin.com/jobs/search/?';
+  const params = new URLSearchParams();
+  params.set('keywords', keyword);
+  if (countries.length) params.set('location', countries[0]);
+  
+  const workTypeMap = { remote: '2', hybrid: '3', 'on-site': '1' };
+  const wtCodes = workTypes.map(w => workTypeMap[w]).filter(Boolean);
+  if (wtCodes.length) params.set('f_WT', wtCodes.join(','));
+  if (easyApply) params.set('f_LF', 'f_AL');
+  params.set('sortBy', 'DD');
+  
+  return base + params.toString();
+}
+
+function generateLinks() {
+  const countries = document.getElementById('countries').value.split(',').map(s => s.trim()).filter(Boolean);
+  const workTypeChecks = document.querySelectorAll('#worktype-options input:checked');
+  const workTypes = [...workTypeChecks].map(c => c.value);
+  const easyApply = document.getElementById('easy-apply').checked;
+  const visa = document.getElementById('visa').checked;
+
+  const allLinks = [];
+  categoriesData.forEach(cat => {
+    cat.keywords.forEach(kw => {
+      if (!kw) return;
+      countries.forEach(country => {
+        const url = buildLinkedInURL(kw, [country], workTypes, easyApply, visa);
+        allLinks.push({ label: `${kw} — ${country}`, url, category: cat.label });
+      });
+    });
+  });
+
+  const resultsEl = document.getElementById('results');
+  const listEl = document.getElementById('links-list');
+  const countEl = document.getElementById('results-count');
+
+  if (!allLinks.length) { resultsEl.style.display = 'none'; return; }
+
+  countEl.textContent = `${allLinks.length} رابط جاهز`;
+  listEl.innerHTML = '';
+
+  let currentCat = null;
+  allLinks.forEach((item, idx) => {
+    if (item.category !== currentCat) {
+      currentCat = item.category;
+      const header = document.createElement('div');
+      header.style.cssText = 'font-size:12px; font-weight:500; color:var(--color-text-secondary); text-transform:uppercase; letter-spacing:0.05em; margin-top:' + (idx > 0 ? '12px' : '0') + '; margin-bottom:4px;';
+      header.textContent = currentCat;
+      listEl.appendChild(header);
+    }
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; align-items:center; gap:8px; background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:8px 12px;';
+    row.innerHTML = `
+      <span style="flex:1; font-size:13px; color:var(--color-text-primary);">${item.label}</span>
+      <a href="${item.url}" style="font-size:12px; padding:4px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-info); color:var(--color-text-info); text-decoration:none;">فتح <i class="ti ti-external-link" aria-hidden="true" style="font-size:12px"></i></a>
+    `;
+    listEl.appendChild(row);
+  });
+
+  resultsEl.style.display = 'block';
+  window._allLinks = allLinks;
+}
+
+function openAll() {
+  if (!window._allLinks) return;
+  window._allLinks.forEach((item, i) => setTimeout(() => window.open(item.url, '_blank'), i * 200));
+}
+
+renderCategories();
+</script>
